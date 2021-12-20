@@ -1,5 +1,6 @@
 """User message handlers"""
 
+from base64 import b64decode
 from tempfile import NamedTemporaryFile
 
 from aiogram import types
@@ -29,15 +30,15 @@ async def photo_handler(message: types.Message):
     url = await message.photo[-1].get_url()
 
     try:
-
-        response = benzin.upload_by_url(url, size='full')
+        response = await benzin.remove_background_by_url(url, size='full')
     except RequestException:
         await message.reply('Ошибка при обработке запроса ;('
                             'Попробуйте позже или обратитесь к разработчику')
         return
 
     with NamedTemporaryFile('wb', prefix='clear_', suffix='.png') as file:
-        file.write(response.content)
+        decoded_image = b64decode(response['image_raw'])
+        file.write(decoded_image)
         image_file = types.InputFile(file.name)
         await message.reply_document(image_file)
     await status_message.delete()
