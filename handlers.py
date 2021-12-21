@@ -4,8 +4,8 @@ from base64 import b64decode
 from tempfile import NamedTemporaryFile
 
 from aiogram import types
-from requests.exceptions import RequestException
 
+from benzin_api.exceptions import MissingImage, BenzinException
 from loader import benzin
 from loader import dp
 
@@ -31,9 +31,14 @@ async def photo_handler(message: types.Message):
 
     try:
         response = await benzin.remove_background_by_url(url, size='full')
-    except RequestException:
-        await message.reply('Ошибка при обработке запроса ;('
-                            'Попробуйте позже или обратитесь к разработчику')
+    except MissingImage:
+        await message.reply('Ошибка при обработке изображения ;(\n Попробуйте'
+                            'отправить другое или обратитесь к разработчику')
+        return
+    except BenzinException:
+        await message.reply('Ошибка при отправке запроса ;(\n Возможно,'
+                            'сервис сейчас недоступен. Попробуйте позже или'
+                            'обратитесь к разработчику.')
         return
 
     with NamedTemporaryFile('wb', prefix='clear_', suffix='.png') as file:
