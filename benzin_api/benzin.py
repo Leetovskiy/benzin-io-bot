@@ -2,7 +2,7 @@
 
 from aiohttp import ClientSession
 
-from .exceptions import BenzinException, MissingImage, UnspecifiedToken
+from .exceptions import UnspecifiedToken
 
 
 class BenzinAPI:
@@ -25,11 +25,10 @@ class BenzinAPI:
                 https://benzin.io/integration/api-docs/
 
         Returns:
-            Deserialized JSON
+            Deserialized JSON of response
 
         Raises:
-            MissingImage: If server return "missing image" error
-            BenzinException: In any another case when server return error
+            ClientResponseError: if response status code is 400 and greater
         """
         if headers is None:
             headers = {}
@@ -39,14 +38,8 @@ class BenzinAPI:
 
         async with ClientSession() as session:
             async with session.post(self.API_URL, headers=headers, data=parameters) as response:
-                response_json = await response.json()
-
-                if response.status != 200:
-                    if response_json['error'] == 'missing image':
-                        raise MissingImage
-                    else:
-                        raise BenzinException
-                return response_json
+                response.raise_for_status()
+                return await response.json()
 
     async def remove_background_by_url(self, url, **parameters) -> dict:
         """Send image by URL and get result response"""
