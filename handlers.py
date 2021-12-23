@@ -1,36 +1,45 @@
 """User message handlers"""
 import re
-from base64 import b64decode
-from tempfile import NamedTemporaryFile
 
 from aiogram import types
-from aiohttp.client_exceptions import ClientResponseError
+from aiogram.types import ContentType
 
-from loader import benzin
 from loader import dp
+from utils import send_result_by_url, is_image
 
 URL_REGEXP_PATTERN = r'^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'(\)\*\+\%=.]+$'
 
 
 @dp.message_handler(commands=['start'])
 async def start_handler(message: types.Message):
-    await message.answer('Привет! Я бот, который может убрать фон с твоего '
-                         'фото.\n Просто отправь мне любую фотографию или '
-                         'ссылку на него')
+    await message.answer(
+        'Привет! Я бот, который может убрать фон с твоего фото.\n'
+        'Просто отправь мне любое изображение, ссылку на него или документ')
 
 
 @dp.message_handler(commands=['help'])
 async def help_handler(message: types.Message):
-    await message.answer('Чтобы удалить фон отправь мне изображение или его '
-                         'ссылку, по которой он доступен в сети.\n\n'
-                         'Команды:\n'
-                         '/start – запуск бота\n'
-                         '/help – посмотреть подсказку')
+    await message.answer(
+        'Чтобы удалить фон отправь мне любое изображение, ссылку на него или '
+        'документ\n\n'
+        'Команды:\n'
+        '/start – запуск бота\n'
+        '/help – посмотреть подсказку')
 
 
-@dp.message_handler(content_types=types.ContentType.PHOTO)
+@dp.message_handler(content_types=(ContentType.PHOTO, ContentType.DOCUMENT))
 async def photo_handler(message: types.Message):
-    url = await message.photo[-1].get_url()
+    if message.content_type is ContentType.PHOTO:
+        input_object = message.photo[-1]
+    else:
+        input_object = message.document
+        if not await is_image(input_object):
+            await message.reply(
+                '*Ошибка*\nДокумент должен быть изображением\!',
+                parse_mode='MarkdownV2')
+            return
+
+    url = await input_object.get_url()
     await send_result_by_url(message, url)
 
 
@@ -42,32 +51,5 @@ async def url_handler(message: types.Message):
 
 @dp.message_handler(lambda _: True)
 async def any_message_handler(message: types.Message):
-    await message.reply('Неизвестная команда!\n'
+    await message.reply('Я принимаю только команды или изображения\n'
                         'Подсказка: /help')
-
-
-async def send_result_by_url(message: types.Message, image_url: str):
-    """Removes background from image by URL and send result to user"""
-    status_message = await message.reply('Обрабатываю…', disable_notification=True)
-    try:
-        response = await benzin.remove_background_by_url(image_url, size='full')
-
-        with NamedTemporaryFile('wb', prefix='clear_', suffix='.png') as file:
-            decoded_image = b64decode(response['image_raw'])
-            file.write(decoded_image)
-            image_file = types.InputFile(file.name)
-            await message.reply_document(image_file)
-    except ClientResponseError:
-        await message.reply('*Ошибка при обработке запроса ;\(*\n\n'
-                            'Отправьте другое изображение/ссылку, попробуйте '
-                            'позже или обратитесь к разработчику',
-                            parse_mode='MarkdownV2')
-        return
-    except Exception:
-        await message.reply('*Неожиданная ошибка ;\(*\n\nОтправьте другое '
-                            'изображение/ссылку, попробуйте позже или '
-                            'обратитесь к разработчику',
-                            parse_mode='MarkdownV2')
-        return
-    finally:
-        await status_message.delete()
