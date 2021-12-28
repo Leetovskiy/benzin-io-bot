@@ -6,8 +6,8 @@ from tempfile import NamedTemporaryFile
 
 from aiogram import types
 from aiogram.types import Document
-from aiohttp import ClientResponseError
 
+from benzin.exceptions import ResponseError
 from loader import benzin
 
 
@@ -35,17 +35,22 @@ async def send_result_by_url(message: types.Message, image_url: str):
     """Removes background from image by URL and send result to user"""
     status_message = await message.reply('Обрабатываю…', disable_notification=True)
     try:
-        response = await benzin.remove_background_by_url(image_url, size='full')
+        response = await benzin.remove_background(
+            image_file_url=image_url,
+            size='full',
+            output_format='json',
+        )
 
         with NamedTemporaryFile('wb', prefix='@ClearBG_bot-', suffix='.png') as file:
             decoded_image = b64decode(response['image_raw'])
             file.write(decoded_image)
             image_file = types.InputFile(file.name)
             await message.reply_document(image_file)
-    except ClientResponseError:
-        await message.reply('*Ошибка при обработке запроса ;\(*\n\n'
-                            'Отправьте другое изображение/ссылку, попробуйте '
-                            'позже или обратитесь к разработчику',
+    except ResponseError as e:
+        await message.reply(f'*Ошибка при обработке запроса:*\n'
+                            f'{e.message}\n\n'
+                            f'Отправьте другое изображение/ссылку, попробуйте '
+                            f'позже или обратитесь к разработчику',
                             parse_mode='MarkdownV2')
         return
     except Exception:

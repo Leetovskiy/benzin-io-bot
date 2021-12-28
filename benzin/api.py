@@ -24,7 +24,7 @@ class BenzinAPI:
             params: Optional[Mapping[str, str]] = None,
             data: Optional[Union[FormData, Iterable[Any]]] = None,
             headers: Optional[LooseHeaders] = None
-    ) -> Union[Dict[Any], ClientResponse]:
+    ) -> Union[Dict[str, Any], ClientResponse]:
         """Send a request to the API
 
         All arguments are similar to aiohttp request method
@@ -100,7 +100,7 @@ class Benzin:
             bg_color: Optional[str] = None,
             bg_image_file_b64: Optional[str] = None,
             bg_image_file_url: Optional[str] = None
-    ) -> Union[Dict[Any], ClientResponse]:
+    ) -> Union[Dict[str, Any], ClientResponse]:
         """Remove the background from any image
 
         It is required to pass at least one of the parameters: image_file_b64,
@@ -115,7 +115,7 @@ class Benzin:
         values = locals().copy()
         values.pop('self')
         parameters = {
-            key: str(value).lower()
+            key: str(value)
             for key, value in values.items()
             if value is not None
         }
