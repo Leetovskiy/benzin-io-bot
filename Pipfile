@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 aiogram = "*"
 aiohttp = "*"
-requests = "*"
 
 [dev-packages]
 autopep8 = "*"
