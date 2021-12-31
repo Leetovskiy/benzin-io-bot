@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 
 from aiogram import types
 from aiogram.types import Document
+from loguru import logger
 
 from benzin.exceptions import ResponseError
 from loader import benzin
@@ -31,6 +32,7 @@ async def is_image(document: Document) -> bool:
         return bool(imghdr.what(file.name))
 
 
+@logger.catch
 async def send_result_by_url(message: types.Message, image_url: str):
     """Removes background from image by URL and send result to user"""
     status_message = await message.reply('Обрабатываю…', disable_notification=True)
@@ -46,17 +48,11 @@ async def send_result_by_url(message: types.Message, image_url: str):
             file.write(decoded_image)
             image_file = types.InputFile(file.name)
             await message.reply_document(image_file)
-    except ResponseError as e:
+    except ResponseError:
+        logger.exception(f'Benzin API response error occurred from message: {message}')
         await message.reply(f'*Ошибка при обработке запроса:*\n'
-                            f'{e.message}\n\n'
                             f'Отправьте другое изображение/ссылку, попробуйте '
                             f'позже или обратитесь к разработчику',
-                            parse_mode='MarkdownV2')
-        return
-    except Exception:
-        await message.reply('*Неожиданная ошибка ;\(*\n\nОтправьте другое '
-                            'изображение/ссылку, попробуйте позже или '
-                            'обратитесь к разработчику',
                             parse_mode='MarkdownV2')
         return
     finally:
