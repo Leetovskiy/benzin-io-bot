@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 
 from aiogram import types
 from aiogram.types import Document
+from aiogram.utils.exceptions import TelegramAPIError
 from loguru import logger
 
 from benzin.exceptions import ResponseError
@@ -36,24 +37,37 @@ async def is_image(document: Document) -> bool:
 async def send_result_by_url(message: types.Message, image_url: str):
     """Removes background from image by URL and send result to user"""
     status_message = await message.reply('Обрабатываю…', disable_notification=True)
+    message_id = message.message_id
+
     try:
+        logger.debug(f'Sending request to the API for message {message_id}')
+
         response = await benzin.remove_background(
             image_file_url=image_url,
             size='full',
             output_format='json',
         )
-
-        with NamedTemporaryFile('wb', prefix='@ClearBG_bot-', suffix='.png') as file:
-            decoded_image = b64decode(response['image_raw'])
-            file.write(decoded_image)
-            image_file = types.InputFile(file.name)
-            await message.reply_document(image_file)
-    except ResponseError:
-        logger.exception(f'Benzin API response error occurred from message: {message}')
+    except ResponseError as e:
+        logger.error(f'Benzin API response error occurred from message {message_id}: {e}')
         await message.reply(f'*Ошибка при обработке запроса:*\n'
                             f'Отправьте другое изображение/ссылку, попробуйте '
                             f'позже или обратитесь к разработчику',
                             parse_mode='MarkdownV2')
         return
+    else:
+        logger.success(f'Successful response for message {message_id}')
+
+        with NamedTemporaryFile('wb', prefix='@ClearBG_bot-', suffix='.png') as file:
+            decoded_image = b64decode(response['image_raw'])
+            file.write(decoded_image)
+            image_file = types.InputFile(file.name)
+
+            try:
+                await message.reply_document(image_file)
+            except TelegramAPIError as e:
+                logger.error(f'An error occurred while sending a reply to message {message_id}: {e}')
+                await message.reply(f'Произошла ошибка при отправке сообщения с результатом. Попробуйте снова.')
+            else:
+                logger.success(f'Reply to message {message_id} sent successfully')
     finally:
         await status_message.delete()

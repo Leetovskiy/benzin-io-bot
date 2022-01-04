@@ -9,8 +9,9 @@ class ResponseError(Exception):
         status (int): response status code
         reason (str: response error reason
     """
+
     def __init__(self, status: int, reason: str):
-        message = f'Benzin API returned an error: {status}, {reason}'
+        message = f'{status}, {reason}'
         self.message: str = message
         self.status: int = status
         self.reason: str = reason
