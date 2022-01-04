@@ -5,10 +5,12 @@ import os
 import sys
 
 from aiogram import Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from loguru import logger
 
 from benzin.api import Benzin
-from middleware.logging_middleware import LoggingMiddleware
+from middleware.logging import LoggingMiddleware
+from middleware.throttling import ThrottlingMiddleware
 
 # Disable default aiogram logging
 logging.getLogger('aiogram').disabled = True
@@ -29,9 +31,11 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 BENZIN_TOKEN = os.getenv('BENZIN_TOKEN')
 
 # Objects instantiation
+storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher(bot, storage=storage)
 benzin = Benzin(BENZIN_TOKEN)
 
 # Enable aiogram middleware
+dp.middleware.setup(ThrottlingMiddleware(limit=1))
 dp.middleware.setup(LoggingMiddleware())
