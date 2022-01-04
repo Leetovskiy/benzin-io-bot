@@ -38,8 +38,10 @@ async def send_result_by_url(message: types.Message, image_url: str):
     """Removes background from image by URL and send result to user"""
     status_message = await message.reply('Обрабатываю…', disable_notification=True)
     message_id = message.message_id
+
     try:
         logger.debug(f'Sending request to the API for message {message_id}')
+
         response = await benzin.remove_background(
             image_file_url=image_url,
             size='full',
@@ -53,17 +55,19 @@ async def send_result_by_url(message: types.Message, image_url: str):
                             parse_mode='MarkdownV2')
         return
     else:
-        logger.debug(f'Successful response for message {message_id}')
+        logger.success(f'Successful response for message {message_id}')
+
         with NamedTemporaryFile('wb', prefix='@ClearBG_bot-', suffix='.png') as file:
             decoded_image = b64decode(response['image_raw'])
             file.write(decoded_image)
             image_file = types.InputFile(file.name)
+
             try:
                 await message.reply_document(image_file)
             except TelegramAPIError as e:
                 logger.error(f'An error occurred while sending a reply to message {message_id}: {e}')
                 await message.reply(f'Произошла ошибка при отправке сообщения с результатом. Попробуйте снова.')
             else:
-                logger.debug(f'Reply to message {message_id} sent successfully')
+                logger.success(f'Reply to message {message_id} sent successfully')
     finally:
         await status_message.delete()
