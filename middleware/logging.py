@@ -7,4 +7,5 @@ class LoggingMiddleware(BaseMiddleware):
 
     @classmethod
     async def on_process_message(cls, message: Message, data: dict):
-        logger.info(f'Message received: {message}')
+        log_string = f'(chat: {message.chat.id}; message: {message.message_id})'
+        logger.info(f'Message received {log_string}')
