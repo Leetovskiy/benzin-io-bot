@@ -1,3 +1,6 @@
+# Copyright © 2022 Vitaliy Zaitsev. All rights reserved.
+# Contacts: dev.zaitsev@gmail.com
+# Licensed under the Apache License, Version 2.0
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.types import Message
 from loguru import logger
