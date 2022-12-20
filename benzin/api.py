@@ -1,3 +1,6 @@
+# Copyright © 2022 Vitaliy Zaitsev. All rights reserved.
+# Contacts: dev.zaitsev@gmail.com
+# Licensed under the Apache License, Version 2.0
 """Benzin.io API classes"""
 
 from typing import Mapping, Iterable, Union, Any, Optional, Dict
